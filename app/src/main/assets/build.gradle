@@ -1,0 +1,7 @@
+sourceSets {
+    main {
+        assets {
+            srcDir 'src/main/assets'
+        }
+    }
+}
