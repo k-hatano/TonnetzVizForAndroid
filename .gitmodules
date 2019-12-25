@@ -1,0 +1,3 @@
+[submodule "app/assets/tonnetz-viz"]
+	path = app/assets/tonnetz-viz
+	url = https://github.com/k-hatano/tonnetz-viz.git
