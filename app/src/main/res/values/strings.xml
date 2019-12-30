@@ -1,3 +1,16 @@
 <resources>
     <string name="app_name">TonnetzViz for Android</string>
+
+    <string name="note_a">A</string>
+    <string name="note_w">W</string>
+    <string name="note_s">S</string>
+    <string name="note_e">E</string>
+    <string name="note_d">D</string>
+    <string name="note_f">F</string>
+    <string name="note_t">T</string>
+    <string name="note_g">G</string>
+    <string name="note_y">Y</string>
+    <string name="note_h">H</string>
+    <string name="note_u">U</string>
+    <string name="note_j">J</string>
 </resources>

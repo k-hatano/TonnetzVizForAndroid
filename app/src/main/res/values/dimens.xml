@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="note_button_shelf_height">96dp</dimen>
+
+    <dimen name="note_button_width">48dp</dimen>
+    <dimen name="note_space_width">24dp</dimen>
+</resources>
