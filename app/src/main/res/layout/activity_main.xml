@@ -19,99 +19,125 @@
 
     <LinearLayout
         android:id="@+id/relativeLayout"
-        android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="@dimen/note_button_shelf_height"
+        android:background="@color/lightlightgray"
+        android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        android:background="@color/lightlightgray">
+        app:layout_constraintStart_toStartOf="parent">
 
 
         <LinearLayout
-            android:layout_height="@dimen/note_button_width"
             android:layout_width="match_parent"
+            android:layout_height="@dimen/note_button_width"
+            android:layout_weight="2"
             android:gravity="center">
-        <Button
-            android:id="@+id/button_w"
-            android:layout_width="@dimen/note_button_width"
-            android:layout_height="@dimen/note_button_width"
-            android:text="@string/note_w" />
 
-        <Button
-            android:id="@+id/button_e"
-            android:layout_width="@dimen/note_button_width"
-            android:layout_height="@dimen/note_button_width"
-            android:text="@string/note_e" />
+            <View
+                android:layout_width="0dp"
+                android:layout_height="@dimen/note_button_width"
+                android:layout_weight="1"></View>
 
-        <View
-            android:layout_width="@dimen/note_button_width"
-            android:layout_height="@dimen/note_button_width">
-        </View>
+            <Button
+                android:id="@+id/button_w"
+                android:layout_width="0dp"
+                android:layout_height="@dimen/note_button_width"
+                android:layout_weight="2"
+                android:text="@string/note_w" />
 
-        <Button
-            android:id="@+id/button_t"
-            android:layout_width="@dimen/note_button_width"
-            android:layout_height="@dimen/note_button_width"
-            android:text="@string/note_t" />
+            <Button
+                android:id="@+id/button_e"
+                android:layout_width="0dp"
+                android:layout_height="@dimen/note_button_width"
+                android:layout_weight="2"
+                android:text="@string/note_e" />
 
-        <Button
-            android:id="@+id/button_y"
-            android:layout_width="@dimen/note_button_width"
-            android:layout_height="@dimen/note_button_width"
-            android:text="@string/note_y" />
+            <View
+                android:layout_width="0dp"
+                android:layout_height="@dimen/note_button_width"
+                android:layout_weight="2"></View>
 
-        <Button
-            android:id="@+id/button_u"
-            android:layout_width="@dimen/note_button_width"
-            android:layout_height="@dimen/note_button_width"
-            android:text="@string/note_u" />
+            <Button
+                android:id="@+id/button_t"
+                android:layout_width="0dp"
+                android:layout_height="@dimen/note_button_width"
+                android:layout_weight="2"
+                android:text="@string/note_t" />
+
+            <Button
+                android:id="@+id/button_y"
+                android:layout_width="0dp"
+                android:layout_height="@dimen/note_button_width"
+                android:layout_weight="2"
+                android:text="@string/note_y" />
+
+            <Button
+                android:id="@+id/button_u"
+                android:layout_width="0dp"
+                android:layout_height="@dimen/note_button_width"
+                android:layout_weight="2"
+                android:text="@string/note_u" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="@dimen/note_button_width"
+                android:layout_weight="1"></View>
         </LinearLayout>
 
         <LinearLayout
-            android:layout_height="@dimen/note_button_width"
             android:layout_width="match_parent"
-            android:gravity="center">
+            android:layout_height="@dimen/note_button_width"
+            android:gravity="center"
+            android:layout_weight="1">
+
             <Button
                 android:id="@+id/button_a"
-                android:layout_width="@dimen/note_button_width"
+                android:layout_width="0dp"
                 android:layout_height="@dimen/note_button_width"
+                android:layout_weight="2"
                 android:text="@string/note_a" />
 
             <Button
                 android:id="@+id/button_s"
-                android:layout_width="@dimen/note_button_width"
+                android:layout_width="0dp"
                 android:layout_height="@dimen/note_button_width"
+                android:layout_weight="2"
                 android:text="@string/note_s" />
 
             <Button
                 android:id="@+id/button_d"
-                android:layout_width="@dimen/note_button_width"
+                android:layout_width="0dp"
                 android:layout_height="@dimen/note_button_width"
+                android:layout_weight="2"
                 android:text="@string/note_d" />
 
             <Button
                 android:id="@+id/button_f"
-                android:layout_width="@dimen/note_button_width"
+                android:layout_width="0dp"
                 android:layout_height="@dimen/note_button_width"
+                android:layout_weight="2"
                 android:text="@string/note_f" />
 
             <Button
                 android:id="@+id/button_g"
-                android:layout_width="@dimen/note_button_width"
+                android:layout_width="0dp"
                 android:layout_height="@dimen/note_button_width"
+                android:layout_weight="2"
                 android:text="@string/note_g" />
 
             <Button
                 android:id="@+id/button_h"
-                android:layout_width="@dimen/note_button_width"
+                android:layout_width="0dp"
                 android:layout_height="@dimen/note_button_width"
+                android:layout_weight="2"
                 android:text="@string/note_h" />
 
             <Button
                 android:id="@+id/button_j"
-                android:layout_width="@dimen/note_button_width"
+                android:layout_width="0dp"
                 android:layout_height="@dimen/note_button_width"
+                android:layout_weight="2"
                 android:text="@string/note_j" />
         </LinearLayout>
     </LinearLayout>
