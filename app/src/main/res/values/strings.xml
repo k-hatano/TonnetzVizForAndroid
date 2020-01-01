@@ -13,4 +13,13 @@
     <string name="note_h">H</string>
     <string name="note_u">U</string>
     <string name="note_j">J</string>
+
+    <string name="tab_keyboard">Virtual Keyboard</string>
+    <string name="tab_midi_file">MIDI file</string>
+    <string name="tab_minimize">Minimize</string>
+
+    <string name="button_select_midi_file">Select MIDI File</string>
+    <string name="button_play">Play</string>
+    <string name="button_stop">Stop</string>
+    <string name="message_no_file_selected">No file selected</string>
 </resources>
