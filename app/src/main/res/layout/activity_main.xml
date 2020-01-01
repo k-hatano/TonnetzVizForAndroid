@@ -180,16 +180,19 @@
                         android:layout_height="@dimen/note_button_width">
 
                         <Button
+                            android:id="@+id/button_select_midi_file"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/button_select_midi_file" />
 
                         <Button
+                            android:id="@+id/button_play"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/button_play" />
 
                         <Button
+                            android:id="@+id/button_stop"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/button_stop" />
