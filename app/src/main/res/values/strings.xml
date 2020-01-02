@@ -22,4 +22,7 @@
     <string name="button_play">Play</string>
     <string name="button_stop">Stop</string>
     <string name="message_no_file_selected">No file selected</string>
+    <string name="message_connected_to">Connected to </string>
+    <string name="message_no_midi_device_found">No MIDI device found</string>
+    <string name="message_playing_midi_file_failed">Failed playing MIDI file</string>
 </resources>
