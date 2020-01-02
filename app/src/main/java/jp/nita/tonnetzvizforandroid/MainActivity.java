@@ -5,7 +5,6 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
-import android.app.AlertDialog;
 import android.content.pm.PackageManager;
 import android.os.Environment;
 import android.util.Log;
@@ -19,17 +18,15 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 
-import jp.nita.utils.FileSelectionDialog;
+import jp.nita.utils.FileSelectDialog;
 
-import static jp.nita.utils.FileSelectionDialog.*;
+import static jp.nita.utils.FileSelectDialog.*;
 
 public class MainActivity extends AppCompatActivity {
 
     private WebView mWebView;
-
     private static final int REQUEST_PERMISSION_READ_EXTERNAL_STORAGE = 1;
 
     @Override
@@ -102,7 +99,9 @@ public class MainActivity extends AppCompatActivity {
         buttonSelectMidiFile.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                FileSelectionDialog dialog = new FileSelectionDialog(v.getContext(), new OnFileSelectListener() {
+                final String[] midiExtensions = {"mid", "midi"};
+
+                FileSelectDialog dialog = new FileSelectDialog(v.getContext(), new OnFileSelectListener() {
                     @Override
                     public void onFileSelect(File file) {
                         ((TextView)findViewById(R.id.message)).setText(file.getAbsolutePath());
@@ -110,7 +109,7 @@ public class MainActivity extends AppCompatActivity {
                 });
                 File initialDirectory = Environment.getExternalStorageDirectory();
 
-                dialog.show(initialDirectory);
+                dialog.show(initialDirectory, midiExtensions);
             }
         });
 
