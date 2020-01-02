@@ -35,17 +35,14 @@ import java.util.List;
 
 import jp.kshoji.javax.sound.midi.ControllerEventListener;
 import jp.kshoji.javax.sound.midi.InvalidMidiDataException;
-import jp.kshoji.javax.sound.midi.MetaEventListener;
-import jp.kshoji.javax.sound.midi.MetaMessage;
 import jp.kshoji.javax.sound.midi.MidiSystem;
 import jp.kshoji.javax.sound.midi.MidiUnavailableException;
-import jp.kshoji.javax.sound.midi.Receiver;
 import jp.kshoji.javax.sound.midi.Sequence;
 import jp.kshoji.javax.sound.midi.Sequencer;
 import jp.kshoji.javax.sound.midi.ShortMessage;
-import jp.kshoji.javax.sound.midi.Synthesizer;
 import jp.kshoji.javax.sound.midi.Transmitter;
 import jp.nita.utils.FileSelectDialog;
+import jp.nita.utils.Statics;
 
 import static jp.nita.utils.FileSelectDialog.*;
 
@@ -53,7 +50,6 @@ public class MainActivity extends AppCompatActivity {
 
     private WebView mWebView;
     private static final int REQUEST_PERMISSION_READ_EXTERNAL_STORAGE = 1;
-    private Transmitter mTransmitter = null;
     private Sequencer mSequencer = null;
 
     private MidiManager mNativeMidiManager = null;
@@ -74,18 +70,6 @@ public class MainActivity extends AppCompatActivity {
         return filteredMidiDevices;
     }
 
-    public static String bin2hex(byte[] data) {
-        StringBuffer sb = new StringBuffer();
-        for (byte b : data) {
-            String s = Integer.toHexString(0xff & b);
-            if (s.length() == 1) {
-                sb.append("0");
-            }
-            sb.append(s);
-        }
-        return sb.toString();
-    }
-
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -97,21 +81,6 @@ public class MainActivity extends AppCompatActivity {
         mHandler = new Handler(Looper.getMainLooper());
 
         initTabs();
-
-        mNativeMidiManager = (MidiManager) getSystemService(Context.MIDI_SERVICE);
-        List<MidiDeviceInfo> midiDevices = getMidiDevices(false);
-        if (midiDevices.size() > 0) {
-            mNativeMidiManager.openDevice(midiDevices.get(0),
-                    new MidiManager.OnDeviceOpenedListener() {
-                        @Override
-                        public void onDeviceOpened(MidiDevice device) {
-                            mNativeMidiDevice = device;
-                            mNativeMidiInputPort = device.openInputPort(0);
-                        }
-                    }, null);
-        } else {
-            Toast.makeText(this, getText(R.string.message_no_midi_device_found), Toast.LENGTH_SHORT).show();
-        }
 
         mWebView = (WebView) findViewById(R.id.webView1);
         mWebView.getSettings().setJavaScriptEnabled(true);
@@ -203,6 +172,10 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
 
+                if (mSequencer != null) {
+                    emergencySequencerStop();
+                }
+
                 try {
                     final int[] allControllersMask = new int[128];
                     for (int i = 0; i < allControllersMask.length; i++) {
@@ -210,36 +183,17 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     mSequencer = MidiSystem.getSequencer();
-                    mSequencer.addMetaEventListener(new MetaEventListener() {
-                        @Override
-                        public void meta(@NonNull MetaMessage metaMessage) {
-                            try {
-                                Log.i(this.getClass().toString(), metaMessage.getMessage().toString());
-                                mNativeMidiInputPort.send(metaMessage.getData(), 0, metaMessage.getData().length, mSequencer.getMicrosecondPosition());
-                                mNativeMidiInputPort.flush();
-
-                                final String finalMessage = mSequencer.getMicrosecondPosition() + " / " + mSequencer.getMicrosecondLength() + " : Meta " + MainActivity.bin2hex(metaMessage.getData());
-                                mHandler.post(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        TextView tvDuration = findViewById(R.id.duration);
-                                        tvDuration.setText(finalMessage);
-                                    }
-                                });
-                            } catch (IOException exc) {
-                                exc.printStackTrace();
-                            }
-                        }
-                    });
                     mSequencer.addControllerEventListener(new ControllerEventListener() {
                         @Override
                         public void controlChange(@NonNull ShortMessage shortMessage) {
                             try {
                                 Log.i(this.getClass().toString(), shortMessage.getMessage().toString());
-                                mNativeMidiInputPort.send(shortMessage.getMessage(), 0, shortMessage.getLength(), mSequencer.getMicrosecondPosition());
-                                mNativeMidiInputPort.flush();
 
-                                final String finalMessage = mSequencer.getMicrosecondPosition() + " / " + mSequencer.getMicrosecondLength() + " : Ctrl " + MainActivity.bin2hex(shortMessage.getMessage());
+                                byte bytesToSend[] = shortMessage.getMessage();
+                                mNativeMidiInputPort.send(bytesToSend, 0, 3);
+
+                                final String finalMessage = mSequencer.getMicrosecondPosition() + " / " + mSequencer.getMicrosecondLength() +
+                                        " : Ctrl " + Statics.bin2hex(shortMessage.getMessage());
                                 mHandler.post(new Runnable() {
                                     @Override
                                     public void run() {
@@ -274,10 +228,12 @@ public class MainActivity extends AppCompatActivity {
                 } catch (InvalidMidiDataException e) {
                     e.printStackTrace();
                     Toast.makeText(MainActivity.this, getString(R.string.message_playing_midi_file_failed), Toast.LENGTH_SHORT).show();
+                    emergencySequencerStop();
                     return;
                 } catch (IOException e) {
                     e.printStackTrace();
                     Toast.makeText(MainActivity.this, getString(R.string.message_playing_midi_file_failed), Toast.LENGTH_SHORT).show();
+                    emergencySequencerStop();
                     return;
                 }
             }
@@ -290,22 +246,47 @@ public class MainActivity extends AppCompatActivity {
                 TextView tvDuration = findViewById(R.id.duration);
                 tvDuration.setText("");
 
-                if (mSequencer != null) {
-                    if (mSequencer.isRunning()) {
-                        mSequencer.stop();
-                    }
-
-                    if (mSequencer.isOpen()) {
-                        mSequencer.close();
-                    }
-                }
+                emergencySequencerStop();
             }
         });
+
+        mNativeMidiManager = (MidiManager) getSystemService(Context.MIDI_SERVICE);
+        List<MidiDeviceInfo> midiDevices = getMidiDevices(false);
+        if (midiDevices.size() > 0) {
+            mNativeMidiManager.openDevice(midiDevices.get(0),
+                    new MidiManager.OnDeviceOpenedListener() {
+                        @Override
+                        public void onDeviceOpened(MidiDevice device) {
+                            mNativeMidiDevice = device;
+                            mNativeMidiInputPort = device.openInputPort(0);
+                        }
+                    }, new Handler(Looper.getMainLooper()));
+        } else {
+            Toast.makeText(this, getText(R.string.message_no_midi_device_found), Toast.LENGTH_SHORT).show();
+        }
+
+        mNativeMidiManager.registerDeviceCallback(new MidiManager.DeviceCallback() {
+            public void onDeviceAdded(MidiDeviceInfo info) {
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(MainActivity.this, "MIDI Device added.", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+
+            public void onDeviceRemoved(MidiDeviceInfo info) {
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(MainActivity.this, "MIDI Device disconnected.", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        }, new Handler(Looper.getMainLooper()));
     }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
+    public void emergencySequencerStop() {
         if (mSequencer != null) {
             if (mSequencer.isRunning()) {
                 mSequencer.stop();
@@ -315,6 +296,12 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         mSequencer = null;
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        emergencySequencerStop();
     }
 
     @Override

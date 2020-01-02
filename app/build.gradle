@@ -29,7 +29,5 @@ dependencies {
 
     // check the latest release version with https://github.com/kshoji/javax.sound.midi-for-Android/releases/latest
     compile 'jp.kshoji:javax-sound-midi:0.0.3:@aar'
-    // check the latest release version with https://github.com/kshoji/USB-MIDI-Driver/releases/latest
-    compile 'jp.kshoji:midi-driver:0.1.4:@aar'
 }
 
