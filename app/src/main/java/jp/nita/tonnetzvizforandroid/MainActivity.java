@@ -7,6 +7,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.media.midi.MidiDevice;
@@ -33,14 +34,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import jp.kshoji.javax.sound.midi.ControllerEventListener;
 import jp.kshoji.javax.sound.midi.InvalidMidiDataException;
+import jp.kshoji.javax.sound.midi.MidiEvent;
+import jp.kshoji.javax.sound.midi.MidiMessage;
 import jp.kshoji.javax.sound.midi.MidiSystem;
 import jp.kshoji.javax.sound.midi.MidiUnavailableException;
 import jp.kshoji.javax.sound.midi.Sequence;
 import jp.kshoji.javax.sound.midi.Sequencer;
-import jp.kshoji.javax.sound.midi.ShortMessage;
-import jp.kshoji.javax.sound.midi.Transmitter;
+import jp.kshoji.javax.sound.midi.Track;
 import jp.nita.utils.FileSelectDialog;
 import jp.nita.utils.Statics;
 
@@ -51,6 +52,7 @@ public class MainActivity extends AppCompatActivity {
     private WebView mWebView;
     private static final int REQUEST_PERMISSION_READ_EXTERNAL_STORAGE = 1;
     private Sequencer mSequencer = null;
+    private SequenceRunner mSequenceRunner = null;
 
     private MidiManager mNativeMidiManager = null;
     private MidiDevice mNativeMidiDevice = null;
@@ -183,30 +185,6 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     mSequencer = MidiSystem.getSequencer();
-                    mSequencer.addControllerEventListener(new ControllerEventListener() {
-                        @Override
-                        public void controlChange(@NonNull ShortMessage shortMessage) {
-                            try {
-                                Log.i(this.getClass().toString(), shortMessage.getMessage().toString());
-
-                                byte bytesToSend[] = shortMessage.getMessage();
-                                mNativeMidiInputPort.send(bytesToSend, 0, 3);
-
-                                final String finalMessage = mSequencer.getMicrosecondPosition() + " / " + mSequencer.getMicrosecondLength() +
-                                        " : Ctrl " + Statics.bin2hex(shortMessage.getMessage());
-                                mHandler.post(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        TextView tvDuration = findViewById(R.id.duration);
-                                        tvDuration.setText(finalMessage);
-                                    }
-                                });
-                            } catch (IOException exc) {
-                                exc.printStackTrace();
-                            }
-
-                        }
-                    }, allControllersMask);
 
                     mSequencer.open();
                 } catch (MidiUnavailableException exc) {
@@ -223,6 +201,9 @@ public class MainActivity extends AppCompatActivity {
                     Sequence sequence = MidiSystem.getSequence(file);
 
                     mSequencer.setSequence(sequence);
+
+                    mSequenceRunner = new SequenceRunner(sequence, MainActivity.this);
+                    mSequenceRunner.run();
 
                     mSequencer.start();
                 } catch (InvalidMidiDataException e) {
@@ -287,6 +268,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void emergencySequencerStop() {
+        if (mSequenceRunner != null) {
+            mSequenceRunner.stopAll();
+            mSequenceRunner = null;
+        }
         if (mSequencer != null) {
             if (mSequencer.isRunning()) {
                 mSequencer.stop();
@@ -296,6 +281,14 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         mSequencer = null;
+
+        mWebView.evaluateJavascript("tonnetz.panic();",
+                new ValueCallback<String>() {
+                    @Override
+                    public void onReceiveValue(String reply) {
+                        Log.d(this.getClass().toString(), "replay = " + reply);
+                    }
+                });
     }
 
     @Override
@@ -379,4 +372,99 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private class SequenceRunner {
+        Thread runningThreads[] = new Thread[0];
+        private Sequence mSequence;
+        private Activity mActivity;
+        private boolean isAlive;
+
+        SequenceRunner(Sequence newSequence, Activity newActivity) {
+            mSequence = newSequence;
+            mActivity = newActivity;
+            isAlive = true;
+        }
+
+        public void run() {
+            ArrayList<Thread> runningThreadsList = new ArrayList<Thread>();
+            for (int i = 0; i < mSequence.getTracks().length; i++) {
+                Thread thread = generateRunningThread(mSequence, mSequence.getTracks()[i]);
+                runningThreadsList.add(thread);
+            }
+
+            runningThreads = runningThreadsList.toArray(new Thread[0]);
+            for (int i = 0; i < runningThreads.length; i++) {
+                runningThreads[i].start();
+            }
+        }
+
+        public void stopAll() {
+            isAlive = false;
+            runningThreads = new Thread[0];
+        }
+
+        public Thread generateRunningThread(final Sequence sequence, Track track) {
+            final Track finalTrack = track;
+            Thread thread = new Thread() {
+                public void run() {
+                    long lastTick = 0;
+                    for (int i = 0; i < finalTrack.size() && isAlive; i++) {
+                        MidiEvent event = finalTrack.get(i);
+                        MidiMessage message = event.getMessage();
+                        byte messageBytes[] = message.getMessage();
+
+                        try {
+                            Thread.sleep((event.getTick() - lastTick) * 400 / sequence.getResolution());
+                            // TODO: sleep時間の算出を正確に
+                        } catch (InterruptedException ignore) {
+
+                        }
+                        lastTick = event.getTick();
+
+                        Log.i(this.getClass().toString(), Statics.bin2hex(messageBytes));
+
+                        int messageCommand = (int) (messageBytes[0] & 0xFF);
+
+                        String script = "";
+                        if ((messageBytes[0] & 0xFF) >= 0x90 && (messageBytes[0] & 0xFF) <= 0x9F) {
+                            if ((messageBytes[2] & 0xFF) == 0x00) {
+                                script = "tonnetz.noteOff(" + (int) (messageBytes[0] & 0x0F) + "," + (int) (messageBytes[1] & 0xFF) + ");";
+                            } else {
+                                script = "tonnetz.noteOn(" + (int) (messageBytes[0] & 0x0F) + "," + (int) (messageBytes[1] & 0xFF) + ");";
+                            }
+                        } else if ((messageBytes[0] & 0xFF) >= 0x80 && (messageBytes[0] & 0xFF) <= 0x8F) {
+                            script = "tonnetz.noteOff(" + (int) (messageBytes[0] & 0x0F) + "," + (int) (messageBytes[1] & 0xFF) + ");";
+                        }
+
+                        if ((messageBytes[0] & 0xFF) <= 0x78 && (messageBytes[0] & 0xFF) >= 0x7F) {
+                            for (int j = 0; j < 16; j++) {
+                                script += "tonnetz.allNotesOff(" + j + ");";
+                            }
+                        }
+                        Log.i(this.getClass().toString(), script);
+
+                        final String finalScript = script;
+
+                        if (script.length() > 0) {
+                            mHandler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    WebView webView = mActivity.findViewById(R.id.webView1);
+                                    webView.evaluateJavascript(finalScript,
+                                            new ValueCallback<String>() {
+                                                @Override
+                                                public void onReceiveValue(String reply) {
+                                                    Log.d(this.getClass().toString(), "reply = " + reply);
+                                                }
+                                            });
+                                }
+                            });
+                        }
+                    }
+                }
+            };
+            return thread;
+        }
+    }
+
 }
+
